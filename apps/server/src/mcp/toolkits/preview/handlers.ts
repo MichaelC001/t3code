@@ -8,9 +8,11 @@ import * as Option from "effect/Option";
 import * as Path from "effect/Path";
 import type {
   PreviewAutomationOperation,
+  PreviewAutomationOpenInput,
   PreviewAutomationRecordingArtifact,
   PreviewAutomationRecordingStatus,
   PreviewAutomationResizeResult,
+  PreviewAutomationSetColorSchemeResult,
   PreviewAutomationSnapshot,
   PreviewAutomationStatus,
   PreviewTabId,
@@ -23,6 +25,18 @@ import * as WorkspacePaths from "../../../workspace/WorkspacePaths.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
 import * as PreviewAutomationBroker from "../../PreviewAutomationBroker.ts";
 import { PreviewSnapshotToolkit, PreviewStandardToolkit, PreviewToolkit } from "./tools.ts";
+
+export function normalizePreviewOpenInput(
+  input: PreviewAutomationOpenInput,
+): PreviewAutomationOpenInput {
+  const open = input.open ?? input.show ?? true;
+  return {
+    ...input,
+    open,
+    show: open,
+    reuseExistingTab: input.reuseExistingTab ?? true,
+  };
+}
 
 const invoke = Effect.fn("PreviewToolkit.invoke")(function* <A>(
   operation: PreviewAutomationOperation,
@@ -216,15 +230,13 @@ const saveSnapshotScreenshot = Effect.fn("PreviewToolkit.saveSnapshotScreenshot"
 const handlers = {
   preview_status: (input) => invokeTargeted<PreviewAutomationStatus>("status", input ?? {}),
   preview_open: (input) =>
-    invokeTargeted<PreviewAutomationStatus>("open", {
-      ...input,
-      show: input.show ?? true,
-      reuseExistingTab: input.reuseExistingTab ?? true,
-    }),
+    invokeTargeted<PreviewAutomationStatus>("open", normalizePreviewOpenInput(input)),
   preview_navigate: (input) =>
     invokeTargeted<PreviewAutomationStatus>("navigate", input, input.timeoutMs),
   preview_resize: (input) =>
     invokeTargeted<PreviewAutomationResizeResult>("resize", input, input.timeoutMs),
+  preview_set_appearance: (input) =>
+    invokeTargeted<PreviewAutomationSetColorSchemeResult>("setColorScheme", input),
   preview_snapshot: (input) =>
     Effect.gen(function* () {
       const { save, savePath, ...target } = input ?? {};

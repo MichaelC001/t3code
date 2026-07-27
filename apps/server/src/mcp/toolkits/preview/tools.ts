@@ -10,6 +10,8 @@ import {
   PreviewAutomationResizeInput,
   PreviewAutomationResizeResult,
   PreviewAutomationScrollInput,
+  PreviewAutomationSetColorSchemeInput,
+  PreviewAutomationSetColorSchemeResult,
   PreviewAutomationSnapshot,
   PreviewAutomationSnapshotInput,
   PreviewAutomationStatus,
@@ -67,7 +69,7 @@ export const PreviewStatusTool = Tool.make("preview_status", {
 export const PreviewOpenTool = browserTool(
   Tool.make("preview_open", {
     description:
-      "Show and initialize a collaborative browser tab. Pass tabId to reuse a specific existing tab, set reuseExistingTab=false to create another tab, or omit both to use this agent session's current tab.",
+      "Initialize a collaborative browser tab and open its thread-bound inline preview by default. Set open=false for background-only automation. Pass tabId to reuse a specific existing tab, set reuseExistingTab=false to create another tab, or omit both to use this agent session's current tab.",
     parameters: PreviewAutomationOpenInput,
     success: PreviewAutomationStatus,
     failure: PreviewAutomationError,
@@ -98,6 +100,19 @@ export const PreviewResizeTool = safeBrowserTool(
     dependencies,
   })
     .annotate(Tool.Title, "Resize browser viewport")
+    .annotate(Tool.Idempotent, true),
+);
+
+export const PreviewSetAppearanceTool = safeBrowserTool(
+  Tool.make("preview_set_appearance", {
+    description:
+      "Emulate prefers-color-scheme in a collaborative browser tab, optionally selected by tabId. Use {colorScheme:'dark'} or {colorScheme:'light'} to preview the page in that appearance, and {colorScheme:'system'} to clear the override and follow the OS appearance.",
+    parameters: PreviewAutomationSetColorSchemeInput,
+    success: PreviewAutomationSetColorSchemeResult,
+    failure: PreviewAutomationError,
+    dependencies,
+  })
+    .annotate(Tool.Title, "Set preview appearance")
     .annotate(Tool.Idempotent, true),
 );
 
@@ -192,7 +207,7 @@ export const PreviewRecordingStartTool = safeBrowserTool(
 export const PreviewRecordingStopTool = safeBrowserTool(
   Tool.make("preview_recording_stop", {
     description:
-      "Stop the active browser recording and save it as a local evidence artifact (.webm). To show the recording to the human, embed the returned path directly in your final reply with markdown image syntax, e.g. ![demo](<path>) — the chat renders it as a playable video. The recording is saved on the machine running the desktop app; if the server runs on a different machine the embed can show as unavailable — in that case copy the file into the workspace and embed the workspace-relative path instead.",
+      "Stop recording the collaborative browser tab selected by tabId, or this agent session's current tab when omitted, and save it as a local evidence artifact (.webm). To show the recording to the human, embed the returned path directly in your final reply with markdown image syntax, e.g. ![demo](<path>) — the chat renders it as a playable video. The recording is saved on the machine running the desktop app; if the server runs on a different machine the embed can show as unavailable — in that case copy the file into the workspace and embed the workspace-relative path instead.",
     parameters: PreviewAutomationTabTargetInput,
     success: PreviewAutomationRecordingArtifact,
     failure: PreviewAutomationError,
@@ -205,6 +220,7 @@ export const PreviewToolkit = Toolkit.make(
   PreviewOpenTool,
   PreviewNavigateTool,
   PreviewResizeTool,
+  PreviewSetAppearanceTool,
   PreviewSnapshotTool,
   PreviewClickTool,
   PreviewTypeTool,
@@ -221,6 +237,7 @@ export const PreviewStandardToolkit = Toolkit.make(
   PreviewOpenTool,
   PreviewNavigateTool,
   PreviewResizeTool,
+  PreviewSetAppearanceTool,
   PreviewClickTool,
   PreviewTypeTool,
   PreviewPressTool,
